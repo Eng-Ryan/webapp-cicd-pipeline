@@ -2,7 +2,12 @@ pipeline {
     agent any
 
     tools {
-        maven 'Maven'
+        maven 'Maven'  
+    }
+
+    environment {
+        
+        JAVA_OPTS = "-Dorg.jenkinsci.plugins.durabletask.BourneShellScript.HEARTBEAT_CHECK_INTERVAL=86400"
     }
 
     stages {
@@ -15,10 +20,30 @@ pipeline {
             }
         }
 
+        stage('Pre-Fetch Dependencies') {
+            steps {
+                
+                withEnv(["JAVA_OPTS=$JAVA_OPTS"]) {
+                    sh 'mvn dependency:go-offline -B'
+                }
+            }
+        }
+
         stage('Build') {
             steps {
-                sh 'mvn clean package'
+                withEnv(["JAVA_OPTS=$JAVA_OPTS"]) {
+                    sh 'mvn clean package -B -DskipTests'  
+                }
             }
+        }
+    }
+
+    post {
+        success {
+            echo "Build completed successfully!"
+        }
+        failure {
+            echo "Build failed. Check logs for errors."
         }
     }
 }
