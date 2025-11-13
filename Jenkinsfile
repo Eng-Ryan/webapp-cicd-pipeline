@@ -14,12 +14,18 @@ pipeline {
                 '''
             }
         }
-
+        
         stage('Build') {
             steps {
-                sh 'mvn clean package'
+                sh '''
+                    echo "[*] Starting Maven Build..."
+                    mvn clean --batch-mode -Dorg.jenkinsci.plugins.durabletask.BourneShellScript.HEARTBEAT_CHECK_INTERVAL=86400
+                    mvn package --batch-mode -Dorg.jenkinsci.plugins.durabletask.BourneShellScript.HEARTBEAT_CHECK_INTERVAL=86400
+                    echo "[*] Build Finished!"
+                '''
             }
         }
+
 
     stage ('Deploy-To-Tomcat') {
             steps {
