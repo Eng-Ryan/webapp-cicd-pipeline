@@ -1,13 +1,9 @@
 pipeline {
     agent any
-	
-	environment {
-	NVD_API_KEY = credentials('a828c692-70bb-4460-8657-acf3be2e758a')
-	}
 
     tools {
         maven 'Maven'
-		}
+    }
 
     stages {
         stage('Initialize') {
@@ -18,22 +14,6 @@ pipeline {
                 '''
             }
         }
-		
-		stage('Security Scan (Dependency-Check)') {
-            steps {
-                sh '''
-                    echo "Running OWASP Dependency-Check with NVD API Key..."
-                    dependency-check.sh \
-                        --nvdApiKey "$NVD_API_KEY" \
-                        --project myapp \
-                        --scan ./ \
-                        --out reports/
-                '''
-
-                sh 'echo "Dependency Check Completed"'
-            }
-        }
-		
         stage ('Check-Git-Secrets') {
             steps {
                 sh 'rm trufflehog || true'
@@ -42,18 +22,17 @@ pipeline {
             }
         }
 
-            stage ('Source Composition Analysis') {
-                steps {
-                    sh 'rm owasp* || true'
-                    sh 'wget "https://raw.githubusercontent.com/Eng-Ryan/webapp-cicd-pipeline/refs/heads/main/owasp-dependency-check.sh" '
-                    sh 'chmod +x owasp-dependency-check.sh'
-                    sh 'bash owasp-dependency-check.sh'
-                    sh 'cat /var/lib/jenkins/OWASP-Dependency-Check/reports/dependency-check-report.xml'
-                }
-            }
- 
 
-        stage('Build') {
+        stage ('Source Composition Analysis') {
+			steps {
+				sh 'rm owasp* || true'
+                sh 'wget "https://raw.githubusercontent.com/Eng-Ryan/webapp-cicd-pipeline/refs/heads/main/owasp-dependency-check.sh" '
+                sh 'chmod +x owasp-dependency-check.sh'
+                sh 'bash owasp-dependency-check.sh'
+                sh 'cat /var/lib/jenkins/OWASP-Dependency-Check/reports/dependency-check-report.xml'
+				}
+            }
+ stage('Build') {
             steps {
                 sh '''
                     echo "[*] Starting Maven Build..."
@@ -71,8 +50,6 @@ pipeline {
                     sh 'scp -o StrictHostKeyChecking=no target/*.war ubuntu@54.82.35.226:/home/ubuntu/prod/apache-tomcat-9.0.112/webapps/webapp.war'
                 }
             }
-
     }
  }
-
 }
